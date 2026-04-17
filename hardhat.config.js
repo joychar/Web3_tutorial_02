@@ -27,7 +27,7 @@ module.exports = {
   solidity: "0.8.28",
   defaultNetwork: "hardhat",
   mocha: {
-    timeout: 300 * 1000,
+    timeout: 300 * 1000, //时限控制
   },
   networks: {
     sepolia: {
