@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 //C:\Users\陈\Desktop\Pragram\hardhat\Web3_tutorial\node_modules\@chainlink\contracts\src\v0.8\shared\interfaces\AggregatorV3Interface.sol
 
 /*
@@ -15,13 +15,13 @@ contract FundMe {
 
     mapping (address => uint256) public funderToAmount;
 
-    uint256 constant MINIMUM_VALUE = 1;
+    uint256 constant MINIMUM_VALUE = 10;
 
-    uint256 constant TARGET = 3;
+    uint256 constant TARGET = 30;
 
-    address owner;
+    address public owner;
 
-    // AggregatorV3Interface internal dataFeed;
+    AggregatorV3Interface internal dataFeed;
 
     uint256 deploymentTimestamp;
     uint lockTime;
@@ -29,17 +29,19 @@ contract FundMe {
     address erc20Addr;
 
     bool public getFundSuccess = false;
+    event FundWithdrawnByOwner(uint256);
+    event RefundByFunder(address, uint256);
 
-    constructor(){
+    constructor(address dataFeedAddr){
         //sep测试网
-        // dataFeed = AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306);
-        owner = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
+        dataFeed = AggregatorV3Interface(dataFeedAddr);
+        owner = msg.sender;
         deploymentTimestamp = block.timestamp;
-        lockTime = 1 * 60 * 60;
+        lockTime = 3 * 60;
     }
 
     function fund() external payable {
-        require(msg.value >= MINIMUM_VALUE, "VALUE < 1");
+        require(msg.value >= MINIMUM_VALUE, "VALUE < 10");
         require(block.timestamp < deploymentTimestamp + lockTime, "windows is closed");
         funderToAmount[msg.sender] += msg.value;
     }
@@ -66,7 +68,7 @@ contract FundMe {
     }
 
     function getFund() external windowClose onlyOwner {
-        require(address(this).balance >= TARGET, "balance < 1");
+        require(address(this).balance >= TARGET, "balance < 30");
         //transfer
         // payable(msg.sender).transfer(address(this).balance);
 
@@ -76,20 +78,23 @@ contract FundMe {
 
         //call
         bool success;
+        uint256 balance = address(this).balance;
         (success, ) = payable(msg.sender).call{value: address(this).balance}("");
         require(success, "transfer tx failes");
         funderToAmount[msg.sender] = 0;
         getFundSuccess = true;
+        emit FundWithdrawnByOwner(balance);
     }
 
     function refund() external windowClose {
-        require(address(this).balance < TARGET, "balance >= 1");
+        require(address(this).balance < TARGET, "balance >= 30");
         uint256 amount = funderToAmount[msg.sender];
         require(amount != 0, "user's value = 0");
         funderToAmount[msg.sender] = 0;
         bool success;
         (success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "transfer tx failes");
+        emit RefundByFunder(msg.sender, amount);
     }
 
     function setFunderToAmount(address funder, uint256 amountToUpdate) external {
@@ -102,7 +107,7 @@ contract FundMe {
     }
 
     modifier windowClose() {
-        require(block.timestamp > deploymentTimestamp + lockTime, "windows is closed");
+        require(block.timestamp > deploymentTimestamp + lockTime, "windows open");
         _;
     }
 

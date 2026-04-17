@@ -2,6 +2,10 @@ require("@nomicfoundation/hardhat-toolbox");
 // require("@chainlink/env-enc").config();
 require("dotenv").config();
 require("./tasks")
+require("hardhat-deploy")
+require("@nomicfoundation/hardhat-ethers")
+require("hardhat-deploy-ethers")
+
 
 const SEPOLIA_URL = process.env.SEPOLIA_URL
 const PRIVATE_KEY =process.env.PRIVATE_KEY
@@ -10,7 +14,7 @@ const PRIVATE_KEY_1 = process.env.PRIVATE_KEY_1
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  sourcify: {
+  sourcify: { 
     enabled: true,
     //鸡巴的我试了很多次都不能验证只能sourceify，ethscan验证不了,一直显示timeout
     //服了浪费我怎么多时间,还以为是版本问题,一直在改版本,给第一个工程改烂我是真无语
@@ -21,6 +25,10 @@ module.exports = {
 
   defaultNetwork: "hardhat",
   solidity: "0.8.28",
+  defaultNetwork: "hardhat",
+  mocha: {
+    timeout: 300 * 1000,
+  },
   networks: {
     sepolia: {
       url: SEPOLIA_URL,
@@ -32,5 +40,16 @@ module.exports = {
     apiKey:{
       sepolia: ETHERSCAN_API_KEY
     }
-  }
+  },
+  namedAccounts: {
+    firstAccount: {
+      default: 0
+    },
+    secondAccount: {
+      default: 1
+    },
+  },
+  gasReporter: {
+    enabled: false,
+  },
 };  
